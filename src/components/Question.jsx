@@ -4,9 +4,7 @@ export default function Question({ question, dispatch, answer }) {
   const hasAnswered = answer !== null && answer !== undefined;
   return (
     <div>
-      <h3>
-        question {1} : {question.question}
-      </h3>
+      <h3>question: {question.question}</h3>
       <div className="options">
         {question.options.map((option, index) => (
           <button

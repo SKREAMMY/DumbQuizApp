@@ -5,6 +5,7 @@ import allQuestions from "./data/questions.json";
 import Loader from "./components/Loader";
 import StartScreen from "./components/StartScreen";
 import Question from "./components/Question";
+import NextButton from "./components/NextButton";
 
 const initialState = {
   questions: [],
@@ -12,6 +13,7 @@ const initialState = {
   status: "loading",
   index: 0,
   answer: null,
+  points: 0,
 };
 
 function reducer(state, action) {
@@ -20,19 +22,47 @@ function reducer(state, action) {
       return {
         ...state,
         questions: action.payload.allQuestions,
-        status: action.status,
+        status: "ready", // or action.payload.status if you actually send one
       };
-    case "datFailed":
+
+    case "dataFailed":
       return { ...state, status: "error" };
+
     case "active":
       return { ...state, status: "active" };
-    case "newAnswer":
-      return { ...state, answer: action.payload };
+
+    case "newAnswer": {
+      const question = state.questions?.[state.index];
+      const totalQuestions = state.questions.length;
+      if (!question) return state;
+
+      if (totalQuestions - 1 === state.index) {
+        return { ...state, answer: action.payload, status: "finished" };
+      }
+
+      return {
+        ...state,
+        answer: action.payload,
+        points:
+          action.payload === question.correctOption // verify your field name
+            ? state.points + question.points
+            : state.points,
+      };
+    }
+
+    case "nextQuestion":
+      return { ...state, index: state.index + 1, answer: null };
+
+    case "finished":
+      return { ...state, status: "finished" };
+
+    default:
+      return state;
   }
 }
 
 function App() {
-  const [{ questions, status, answer }, dispatch] = useReducer(
+  const [{ questions, status, answer, index, points }, dispatch] = useReducer(
     reducer,
     initialState,
   );
@@ -52,12 +82,17 @@ function App() {
           <StartScreen numQuestion={numQuestion} dispatch={dispatch} />
         )}
         {status === "active" && (
-          <Question
-            question={questions[0]}
-            dispatch={dispatch}
-            answer={answer}
-          />
+          <>
+            <Question
+              question={questions[index]}
+              dispatch={dispatch}
+              answer={answer}
+            />
+            <NextButton dispatch={dispatch} />
+            {/* <ProgressBar index={index + 1} totalQuestions={numQuestion} /> */}
+          </>
         )}
+        {status === "finished" && <h2>You scored {points} points</h2>}
       </Main>
     </div>
   );
